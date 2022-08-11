@@ -1,4 +1,4 @@
-module stool
+module github.com/Unquabain/stool
 
 go 1.18
 
