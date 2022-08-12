@@ -22,6 +22,11 @@ func FuncMap() template.FuncMap {
 		return string(b), e
 	}
 	fm[`js`] = fm[`json`]
+	fm[`jsonpretty`] = func(v any) (string, error) {
+		b, e := json.MarshalIndent(v, ``, `    `)
+		return string(b), e
+	}
+	fm[`jspretty`] = fm[`jsonpretty`]
 	return fm
 }
 
