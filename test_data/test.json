@@ -1,0 +1,63 @@
+{
+  "animals": {
+    "invertebrates": {
+      "insects": [
+        "fly",
+        "ant"
+      ],
+      "mollusks": [
+        "clam"
+      ]
+    },
+    "vertebrates": {
+      "mammals": [
+        "horse",
+        "shrew",
+        "cat"
+      ],
+      "reptiles": [
+        "lizard",
+        "snake",
+        "newt"
+      ]
+    }
+  },
+  "minerals": {
+    "igneous": [
+      "obsidian",
+      "granite",
+      "basalt"
+    ],
+    "metamorphic": [
+      "slate",
+      "schist",
+      "marble"
+    ],
+    "sedimentary": [
+      "sandstone",
+      "shale",
+      "chalk"
+    ]
+  },
+  "vegetables": {
+    "flowers": [
+      "rose",
+      "magnolia",
+      "tulip",
+      "narcissus"
+    ],
+    "trees": {
+      "deciduous": [
+        "oak",
+        "maple",
+        "alder",
+        "birch"
+      ],
+      "evergreen": [
+        "pine",
+        "spruce",
+        "fir"
+      ]
+    }
+  }
+}

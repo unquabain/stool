@@ -1,0 +1,45 @@
+animals:
+  vertebrates:
+    mammals:
+      - horse
+      - shrew
+      - cat
+    reptiles:
+      - lizard
+      - snake
+      - newt
+  invertebrates:
+    mollusks:
+      - clam
+    insects:
+      - fly
+      - ant
+vegetables:
+  trees:
+    deciduous:
+      - oak
+      - maple
+      - alder
+      - birch
+    evergreen:
+      - pine
+      - spruce
+      - fir
+  flowers:
+    - rose
+    - magnolia
+    - tulip
+    - narcissus
+minerals:
+  igneous:
+    - obsidian
+    - granite
+    - basalt
+  metamorphic:
+    - slate
+    - schist
+    - marble
+  sedimentary:
+    - sandstone
+    - shale
+    - chalk
