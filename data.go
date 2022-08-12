@@ -5,10 +5,13 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"os"
 
 	yaml "gopkg.in/yaml.v3"
 )
+
+type Unmarshaller func([]byte, any) error
 
 func Parse(filename string, format Format) (map[string]any, error) {
 	var (
@@ -34,19 +37,22 @@ func Parse(filename string, format Format) (map[string]any, error) {
 			return nil, fmt.Errorf(`could not determine format of %q: %w`, filename, err)
 		}
 	}
-	if format == FormatUnknown {
+	var unmarshallers []Unmarshaller
+	switch format {
+	case FormatJSON:
+		unmarshallers = []Unmarshaller{json.Unmarshal, yaml.Unmarshal}
+	case FormatYAML:
+		unmarshallers = []Unmarshaller{yaml.Unmarshal, json.Unmarshal}
+	default:
 		return nil, fmt.Errorf(`could not determine format of %q`, filename)
 	}
 	parsed := make(map[string]any)
-	switch format {
-	case FormatJSON:
-		if err := json.Unmarshal(data, &parsed); err != nil {
-			return nil, fmt.Errorf(`could not unmarshal JSON data from %q: %w`, filename, err)
+	for _, um := range unmarshallers {
+		err = um(data, &parsed)
+		if err == nil {
+			return parsed, nil
 		}
-	case FormatYAML:
-		if err := yaml.Unmarshal(data, &parsed); err != nil {
-			return nil, fmt.Errorf(`could not unmarshal YAML data from %q: %w`, filename, err)
-		}
+		log.Printf(`WARN: unable to parse %q as %s: %s`, filename, format, err.Error())
 	}
-	return parsed, nil
+	return nil, fmt.Errorf(`no unmarshallers were able to parse %q`, filename)
 }

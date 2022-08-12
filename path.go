@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"regexp"
 	"strconv"
 	"strings"
@@ -147,15 +148,26 @@ func (p *Path) chunk() (string, PathChunkType) {
 func evalIndex(data []any, index int) []any {
 	var part int
 	for _, value := range data {
-		array, ok := value.([]any)
-		if !ok {
-			continue
+		switch array := value.(type) {
+		case []any:
+			if len(array) <= index {
+				continue
+			}
+			data[part] = array[index]
+			part++
+		case map[string]any:
+			if len(array) <= index {
+				continue
+			}
+			data[part] = array[fmt.Sprint(index)]
+			part++
+		case map[any]any:
+			if len(array) <= index {
+				continue
+			}
+			data[part] = array[index]
+			part++
 		}
-		if len(array) <= index {
-			continue
-		}
-		data[part] = array[index]
-		part++
 	}
 	return data[:part]
 }
@@ -254,6 +266,89 @@ func evalFuncYAML(data []any) ([]any, error) {
 	return data, nil
 }
 
+func evalFuncKeys(data []any) []any {
+	var part int
+	for _, item := range data {
+		switch dict := item.(type) {
+		case map[string]any:
+			keys := make([]any, 0, len(dict))
+			for key := range dict {
+				keys = append(keys, key)
+			}
+			data[part] = keys
+			part++
+		case map[any]any:
+			keys := make([]any, 0, len(dict))
+			for key := range dict {
+				key = append(keys, fmt.Sprint(key))
+			}
+			data[part] = keys
+			part++
+		}
+	}
+	return data[:part]
+}
+
+func evalFuncFlatten(data []any) []any {
+	var out = make([]any, 0)
+	for _, item := range data {
+		switch value := item.(type) {
+		case []any:
+			out = append(out, value...)
+		case map[string]any:
+			for _, v := range value {
+				out = append(out, v)
+			}
+		case map[any]any:
+			for _, v := range value {
+				out = append(out, v)
+			}
+		default:
+			out = append(out, value)
+		}
+	}
+	return out
+}
+
+func evalFuncResults(data []any) []any {
+	return []any{data}
+}
+
+func evalFuncJSONEval(data []any) ([]any, error) {
+	var part int
+	for rnum, item := range data {
+		switch result := item.(type) {
+		case string:
+			var value any
+			err := json.Unmarshal([]byte(result), &value)
+			if err != nil {
+				log.Print(result)
+				return nil, fmt.Errorf(`could not unmarshal result %d as JSON: %w`, rnum, err)
+			}
+			data[part] = value
+			part++
+		}
+	}
+	return data[:part], nil
+}
+
+func evalFuncYAMLEval(data []any) ([]any, error) {
+	var part int
+	for rnum, item := range data {
+		switch result := item.(type) {
+		case string:
+			var value any
+			err := yaml.Unmarshal([]byte(result), &value)
+			if err != nil {
+				return nil, fmt.Errorf(`could not unmarshal result %d as YAML: %w`, rnum, err)
+			}
+			data[part] = value
+			part++
+		}
+	}
+	return data[:part], nil
+}
+
 func evalFunction(data []any, function string) ([]any, error) {
 	switch function {
 	case `len`, `length`:
@@ -262,8 +357,18 @@ func evalFunction(data []any, function string) ([]any, error) {
 		return evalFuncJSON(data)
 	case `jsonpretty`, `jspretty`, `jpretty`:
 		return evalFuncJSONPretty(data)
+	case `jsoneval`, `jeval`:
+		return evalFuncJSONEval(data)
 	case `yaml`, `yml`:
 		return evalFuncYAML(data)
+	case `yamleval`, `yeval`:
+		return evalFuncYAMLEval(data)
+	case `keys`:
+		return evalFuncKeys(data), nil
+	case `flatten`, `flat`:
+		return evalFuncFlatten(data), nil
+	case `results`:
+		return evalFuncResults(data), nil
 	default:
 		return nil, fmt.Errorf(`unknown function`)
 	}

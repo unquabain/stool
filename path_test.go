@@ -1,8 +1,9 @@
 package main
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 type PathTestCase struct {
@@ -14,15 +15,15 @@ type PathTestCase struct {
 func (ptc PathTestCase) Test(t *testing.T) {
 	t.Helper()
 	data, err := Parse(`test_data/test.yaml`, FormatYAML)
-	assert.NoError(t, err)
+	assert.NoError(t, err, ptc.Path)
 
 	results, err := Evaluate(data, ptc.Path)
 	if ptc.ExpectedError != `` {
-		assert.ErrorContains(t, err, ptc.ExpectedError)
+		assert.ErrorContains(t, err, ptc.ExpectedError, ptc.Path)
 		return
 	}
 	for _, expected := range ptc.ExpectedResults {
-		assert.Contains(t, results, expected)
+		assert.Contains(t, results, expected, ptc.Path)
 	}
 }
 
@@ -127,6 +128,38 @@ var PathTestCases = []PathTestCase{
         "clam"
     ]
 }`,
+		},
+	},
+	{
+		Path: `animals.keys()`,
+		ExpectedResults: []any{
+			[]any{`vertebrates`, `invertebrates`},
+		},
+	},
+	{
+		Path: `meta.description.jeval().type`,
+		ExpectedResults: []any{
+			`yaml document`,
+		},
+	},
+	{
+		Path: `animals.vertebrates.yaml().yeval().mammals`,
+		ExpectedResults: []any{
+			[]any{
+				`horse`,
+				`shrew`,
+				`cat`,
+			},
+		},
+	},
+	{
+		Path: `animals.vertebrates.json().jeval().mammals`,
+		ExpectedResults: []any{
+			[]any{
+				`horse`,
+				`shrew`,
+				`cat`,
+			},
 		},
 	},
 }
