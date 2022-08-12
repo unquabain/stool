@@ -131,8 +131,9 @@ func (p *Path) chunk() (string, PathChunkType) {
 		mlen, allDigits := scanMember(s)
 		chunk := string(s[:mlen])
 		*p = Path(s[mlen:])
-		if s[0] == '(' {
-			*p = Path(s[2:])
+		s = p.RuneArray()
+		if len(s) != 0 && s[0] == '(' {
+			*p = Path([]rune(strings.TrimLeft(string(s), `()`)))
 			return chunk, PCTFunction
 		}
 		if allDigits {
@@ -211,6 +212,8 @@ func evalFuncLen(data []any) []any {
 			data[idx] = len(v)
 		case map[string]any:
 			data[idx] = len(v)
+		case string:
+			data[idx] = len(v)
 		default:
 			data[idx] = 1
 		}
@@ -223,6 +226,17 @@ func evalFuncJSON(data []any) ([]any, error) {
 		bytes, err := json.Marshal(item)
 		if err != nil {
 			return nil, fmt.Errorf(`could not marshal item %d as JSON: %w`, idx, err)
+		}
+		data[idx] = string(bytes)
+	}
+	return data, nil
+}
+
+func evalFuncJSONPretty(data []any) ([]any, error) {
+	for idx, item := range data {
+		bytes, err := json.MarshalIndent(item, ``, `    `)
+		if err != nil {
+			return nil, fmt.Errorf(`could not marshal item %d as JSON-Pretty: %w`, idx, err)
 		}
 		data[idx] = string(bytes)
 	}
@@ -246,6 +260,8 @@ func evalFunction(data []any, function string) ([]any, error) {
 		return evalFuncLen(data), nil
 	case `json`, `js`:
 		return evalFuncJSON(data)
+	case `jsonpretty`, `jspretty`, `jpretty`:
+		return evalFuncJSONPretty(data)
 	case `yaml`, `yml`:
 		return evalFuncYAML(data)
 	default:
@@ -307,23 +323,56 @@ func evalBrace(data []any, expression string) ([]any, error) {
 	rval := strings.TrimSpace(matches[3])
 	out := make([]any, 0)
 	for idx, item := range data {
-		array, ok := item.([]any)
-		if !ok {
-			continue
-		}
-	subloop:
-		for _, subitem := range array {
-			lmatches, err := Evaluate(subitem, lpath)
-			if err != nil {
-				return nil, fmt.Errorf(`could not evaluate lpath %q for item %d: %w`, lpath, idx, err)
+		switch subitems := item.(type) {
+		case []any:
+		arrayloop:
+			for _, subitem := range subitems {
+				lmatches, err := Evaluate(subitem, lpath)
+				if err != nil {
+					return nil, fmt.Errorf(`could not evaluate lpath %q for array item %d: %w`, lpath, idx, err)
+				}
+				if len(lmatches) == 0 {
+					continue
+				}
+				for _, lval := range lmatches {
+					if compare(lval, rval, comparison) {
+						out = append(out, subitem)
+						continue arrayloop
+					}
+				}
 			}
-			if len(lmatches) == 0 {
-				continue
+		case map[string]any:
+		stringloop:
+			for _, subitem := range subitems {
+				lmatches, err := Evaluate(subitem, lpath)
+				if err != nil {
+					return nil, fmt.Errorf(`could not evaluate lpath %q for dict item %d: %w`, lpath, idx, err)
+				}
+				if len(lmatches) == 0 {
+					continue
+				}
+				for _, lval := range lmatches {
+					if compare(lval, rval, comparison) {
+						out = append(out, subitem)
+						continue stringloop
+					}
+				}
 			}
-			for _, lval := range lmatches {
-				if compare(lval, rval, comparison) {
-					out = append(out, subitem)
-					continue subloop
+		case map[any]any:
+		anyloop:
+			for _, subitem := range subitems {
+				lmatches, err := Evaluate(subitem, lpath)
+				if err != nil {
+					return nil, fmt.Errorf(`could not evaluate lpath %q for map item %d: %w`, lpath, idx, err)
+				}
+				if len(lmatches) == 0 {
+					continue
+				}
+				for _, lval := range lmatches {
+					if compare(lval, rval, comparison) {
+						out = append(out, subitem)
+						continue anyloop
+					}
 				}
 			}
 		}

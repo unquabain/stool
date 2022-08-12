@@ -40,8 +40,8 @@ OPTIONS:
     Brackets can be used if the element might have conflicting syntax.
       Example: keys["key with spaces and dot."].value
 
-    A few functions have been defined. They are "length()", "yaml()" and
-    "json()".
+    A few functions have been defined. They are "length()", "yaml()",
+    "json()" and "jspretty()".
       Example: local.en.errors.yaml()
 
     The special value "[*]" will resolve to all the values of an array
