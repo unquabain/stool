@@ -1,13 +1,6 @@
-# STool
-
-[![Run Tests](https://github.com/unquabain/stool/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/unquabain/stool/actions/workflows/test.yml)
-
 A tool for querying and reformatting structured files.
 
-```
-A tool for querying and reformatting structured files.
-
-Usage ./stool [options] filename [outputfile]
+Usage %s [options] filename [outputfile]
 
 OPTIONS:
   --in -i
@@ -92,28 +85,3 @@ OPTIONS:
   --format -f
     The input file format. If the program cannot guess the file format,
     you may specify it as either "json" or "yaml".
-```
-
-## Example
-
-Given a file like:
-
-```json
-{
-  "auths": {
-    "my-private.site": {
-      "auth": "dXNlcjpteXNlY3JldHBhc3N3b3JkCg=="
-    }
-  }
-}
-```
-
-This command will extract the password:
-
-```bash
-stool -i config.json \
-  -s 'auths["my-private.site"].auth' \
-  -t '{{ . | b64dec | splitList ":" | last }}'
-```
-
-The filters `b64dec`, `splitList` and `last` all come from Masterminds Sprig.
